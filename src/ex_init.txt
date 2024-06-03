@@ -1,0 +1,14 @@
+ The __init__.py file in the src folder is used to mark the directory as a Python package. It can also be used to initialize package-level variables or import submodules. Here’s a sample __init__.py for your project:
+ 
+ 
+ Explanation:
+- Docstring: Provides a brief description of the package.
+- Imports: Imports the main functions and classes from your submodules (data_loader, network_builder, neo4j_loader, and utils).
+- '__all__': A list of public objects of that module, as interpreted by import *. This is useful to control what is exported when import * is used on the package.
+This way, when someone imports your package, they can access these functions and classes directly from the src package, like this:
+
+
+from src import load_data, create_network, Neo4jLoader, preprocess_data
+
+
+This setup makes it convenient for users to access the key components of your package without needing to know the internal structure.
