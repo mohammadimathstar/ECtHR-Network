@@ -279,6 +279,40 @@ def redirect_edges(G, v, u):
     return chain(in_edges, out_edges)
 
 
+def set_node_attributes_from_dataframe(G, node_ids: pd.Series, attributes_df: pd.DataFrame):
+    """
+    Set node attributes from a DataFrame containing node identifiers and corresponding attributes.
+
+    Parameters
+    ----------
+    node_ids : pd.Series
+        Series containing node identifiers.
+    attributes_df : pd.DataFrame
+        DataFrame containing attributes to be set for each node.
+
+    Raises
+    ------
+    AssertionError
+        If the number of nodes and the number of attributes do not match.
+
+    Returns
+    -------
+    None
+    """
+    assert len(node_ids) == len(attributes_df), f'Number of nodes {len(node_ids)} and the number of attributes {len(attributes_df)} should be the same'
+
+    for attribute_name in attributes_df.columns:
+        node_attribute_dict = {}
+        for node_id in node_ids:
+            if isinstance(node_id, str):
+                node_identifier = node_id.split(";")[0]
+            else:
+                node_identifier = " "
+            node_attribute_dict[node_identifier] = attributes_df.loc[node_id, attribute_name]
+
+        nx.set_node_attributes(G, node_attribute_dict, name=attribute_name)
+
+
 def merge_cases_with_matching_years(G):
     """
     Merge nodes with missing year information with nodes having complete year information.
