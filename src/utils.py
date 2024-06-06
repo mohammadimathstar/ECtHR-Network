@@ -22,7 +22,7 @@ def save_graph_to_json(graph: nx.DiGraph, filename: str='graph.json') -> None:
     data = json_graph.node_link_data(graph)
     
     # Ensure the "data" directory exists
-    directory = "../data"
+    directory = "./data"
     if not os.path.exists(directory):
         os.makedirs(directory)
     
@@ -179,6 +179,9 @@ def find_year_in_text(s: str, appno: str, citation_year: str, window_size=100) -
     str
         Extracted date or 'None'.
     """
+    if not isinstance(s, str):
+        s = str(s)
+
     l = s.find(appno)
     matches = re.findall(r"\D(\d\d\d\d)\D", s[l:l + window_size])
     val_matches = [m for m in matches if (1950 < int(m)) and (int(m) <= 2022) and (int(m) <= int(citation_year))]
@@ -201,6 +204,7 @@ def concat_appno_year(date: pd.Series, delimiter: str = ";") -> pd.Series:
     pd.Series
         Series with merged application numbers and years.
     """
+    # print()
     merged = [";".join([f"{n}:{data_info[:4]}" for n in appno.split(delimiter)]) for appno, data_info in
               date.items()]
     return pd.Series(merged, index=date.index, copy=False)
@@ -227,8 +231,10 @@ def concat_appno_year_with_search(df: pd.DataFrame, delimiter: str = ";", window
     l = []
     for appno_year, (citations, text) in df.dropna(subset=['ReferTo']).iterrows():
         nodes = citations.split(delimiter)
+
         citedAt = appno_year.split(delimiter)[0][-4:]
         nodes_with_years = [f"{n}:{find_year_in_text(text, n, citedAt, window_size)}" for n in nodes]
+
         l.append(";".join(nodes_with_years))
 
     return pd.Series(l, copy=False, index=df.dropna(subset=['ReferTo']).index)
@@ -313,7 +319,7 @@ def set_node_attributes_from_dataframe(G, node_ids: pd.Series, attributes_df: pd
         nx.set_node_attributes(G, node_attribute_dict, name=attribute_name)
 
 
-def merge_cases_with_matching_years(G):
+def merge_cases_with_matching_years(G: nx.DiGraph):
     """
     Merge nodes with missing year information with nodes having complete year information.
 
@@ -343,7 +349,7 @@ def merge_cases_with_matching_years(G):
                 G.nodes[node2].update(concatenate_dict(G.nodes[node2], G.nodes[node1]))
 
                 # Transfer edges from the node without year information to the node with year information
-                new_edges = redirect_edges(node1, node2)
+                new_edges = redirect_edges(G, node1, node2)
                 G.remove_node(node1)
                 G.add_edges_from(new_edges)
 
@@ -351,4 +357,4 @@ def merge_cases_with_matching_years(G):
                 num_of_matches += 1
                 break
 
-    print(f"We merged {num_of_matches} application numbers (out of {len(nodes_without_year)})")
+    print(f"\tWe merged {num_of_matches} application numbers (out of {len(nodes_without_year)})")

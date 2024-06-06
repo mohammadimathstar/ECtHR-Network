@@ -8,7 +8,7 @@ import re
 
 import collections
 
-from utils import *
+from .utils import *
 
 
 class CitationNetwork(nx.DiGraph):
@@ -69,7 +69,7 @@ class CitationNetwork(nx.DiGraph):
         df2network(df, attrs)
             Converts a dataframe to a citation network.
         """
-    def __init__(self, category: str="JUD"):
+    def __init__(self):
         """
         Initializes the CitationNetworks class.
 
@@ -82,7 +82,7 @@ class CitationNetwork(nx.DiGraph):
         self.G = nx.DiGraph()
         self.duplicate_symbol = 'Duplicate'
         self.window_size = 100 # the window size for searching year of a cited case in the text
-        self.category = category
+        # self.category = category
 
     @staticmethod
     def match_nodes_names(node1: str, node2: str, citation_year=3000):
@@ -166,16 +166,21 @@ class CitationNetwork(nx.DiGraph):
         # If source and target are the same node/case law
         if self.match_nodes_names(source, target):
             return True
+        # if source[:-5] == target[:-5]:
+        #     return True
 
         # If there is an edge from the target to the source
         for (t, s, d) in self.G.in_edges(source, data=True):
-            if self.match_nodes_names(t, target):
+            if t[:-5] == target[:-5]:
                 return True
+        # for (t, s, d) in self.G.in_edges(source, data=True):
+        #     if self.match_nodes_names(t, target):
+        #         return True
 
-        # If this edge has already existed
         if (source, target) in self.G.out_edges(source):
             return True
         return False
+
 
     def add_citations_to_network(self, citations_year: pd.Series, delimiter=";", node_type='Case', edge_type="CASE_TO_CASE"):
         """
@@ -216,6 +221,39 @@ class CitationNetwork(nx.DiGraph):
                     # If the source and target have the same application number, do not add a new edge
                     if not self.is_it_a_self_loop(source, target):
                         self.G.add_edge(source, target, label=edge_type, citedAt=citation_year)
+
+    # def is_it_a_self_loop(self, source, target):
+    #     if source[:-5] == target[:-5]:
+    #         return True
+    #
+    #     for (t, s, d) in self.G.in_edges(source, data=True):
+    #         if t[:-5] == target[:-5]:
+    #             return True
+    #
+    #     if (source, target) in self.G.out_edges(source):
+    #         return True
+    #     return False
+    #
+    # def add_citations_to_network(self, series: pd.Series, delimiter=";", node_type='Case', edge_type="CASE_TO_CASE"):
+    #
+    #     for Case, Refs in series.dropna().items():
+    #         case_id = Case.split(delimiter)[0]
+    #
+    #         # source = self.find_unique_id(case_id)
+    #         source = case_id  # modeified; see above
+    #         citation_year = source[-4:]
+    #
+    #         for ref in Refs.split(delimiter):
+    #             if len(re.findall(r"\d*(\d\d\d/\d\d)", ref)) > 0:
+    #                 if ref not in self.G.nodes():
+    #                     self.G.add_node(ref, label=node_type)
+    #
+    #                 target = self.find_unique_id(ref)
+    #
+    #                 # ****************IMPORTANT***********
+    #                 # if the source and target have the same application number we do not add new
+    #                 if not self.is_it_a_self_loop(source, target):
+    #                     self.G.add_edge(source, target, label=edge_type, citedAt=citation_year)
 
     def merge_cases_with_matching_years(G):
         """
@@ -287,22 +325,31 @@ class CitationNetwork(nx.DiGraph):
         df['Refs_Year'] = concat_appno_year_with_search(df[['ReferTo', 'Text']])
 
         # Start creation of network
-        print("We start the creation of the network!")
+        print("We start the creation of the network!\n")
         print("Adding nodes/case laws to the network!")
         self.add_nodes_of_network(df.AppNo_Year)
+        num_of_cases_with_meta_data = len([n for n, d in self.G.nodes(data=True) if d['label'] == 'Case'])
+        num_of_nodes_with_meta_data_with_duplicates = self.G.number_of_nodes()
+        print(f"\tThere are {self.G.number_of_nodes()} nodes of which {num_of_cases_with_meta_data} is with meta-data "
+              f"and {self.G.number_of_nodes()-num_of_cases_with_meta_data} duplicates (of cases with meta-data)")
 
         print("Adding citations to the network!")
         self.add_citations_to_network(df.Refs_Year)
 
+        print(f"\tThere are {self.G.number_of_nodes()} nodes in the network.")
+        print(f"\tThere are {self.G.number_of_edges()} edges in the network.")
+        print(
+            f"There are {len([n for n, d in self.G.nodes(data=True) if d['label'] == self.duplicate_symbol])} duplicate nodes.\n")
+
         assert nx.is_directed_acyclic_graph(
             self.G), 'The network is not DAG (after creating citation network using dataframe).'
 
-        print(f"There are {len([n for n in self.G.nodes() if n[-4:] == 'None'])} nodes with unknown year."
-              f"Concatenating two nodes: one with known judgment year and another with unknown judgment year!")
+        print(f"There are {len([n for n in self.G.nodes() if n[-4:] == 'None'])} nodes with unknown year.\n"
+              f"Concatenating two nodes with the same application number: one with known judgment year and another with unknown judgment year!")
         self.concatenate_nodes_with_matching_years()
 
-        print(f"\nThere are {len(self.G.nodes())} nodes in total.")
-        print(f"There are {len(self.G.edges())} edges in total.")
+        print(f"\nThere are {self.G.number_of_nodes()} nodes in total.")
+        print(f"There are {self.G.number_of_edges()} edges in total.")
 
         # or if you want to ensure your graph stays DAG use the following
         # self.merge_cases_with_DAG_check()
@@ -320,6 +367,6 @@ class CitationNetwork(nx.DiGraph):
 
         print(f"Note: there are {num_of_dup_nodes} duplicated nodes, but {num_of_dup_edges} DUPLICATE_TO_CASE edges.")
 
-        return df
+        return self.G
 
 

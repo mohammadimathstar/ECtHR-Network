@@ -16,7 +16,7 @@ class CaseDataPreprocessor:
         Parameters:
         - doctype (Literal["DECISIONS", 'JUDGMENTS']): Type of case law document ('DECISIONS' or 'JUDGMENTS').
         """
-        file_path = f"../data/download/{doctype}_full.csv"
+        file_path = f"./data/download/{doctype}_full.csv"
         self.df = pd.read_csv(file_path)
 
         # Dictionary to rename DataFrame columns
@@ -87,6 +87,7 @@ class CaseDataPreprocessor:
 
         # Remove self-references
         self.remove_self_references()
+        return self.df
 
 # pre = preprocess('DECISIONS')
 # pre.do_preprocess()

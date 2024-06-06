@@ -8,14 +8,14 @@ This package provides tools for creating a graph database of case law citations 
 """
 
 # Importing submodules for easier access
-from .data_loader import load_data
-from .network_builder import create_network
+from .data_loader import CaseDataPreprocessor
+from .network_builder import CitationNetwork
 # from .neo4j_loader import Neo4jLoader
 # from .utils import preprocess_data
 
 __all__ = [
-    'load_data',
-    'create_network',
+    'CaseDataPreprocessor',
+    'CitationNetwork',
     # 'Neo4jLoader',
     # 'preprocess_data'
 ]
