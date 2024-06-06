@@ -24,3 +24,6 @@ pip install networkx
 ```bash
 pip install neo4j
 ```
+
+## Download HUDOC
+To download HUDOC database, use the code presented in [HUDOC](https://github.com/WillSkywalker/HUDOCcrawler).
