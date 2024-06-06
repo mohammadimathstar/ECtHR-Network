@@ -1,3 +1,5 @@
 tests/
 .idea/
 data/
+*.pyc
+src/__pycache__/
