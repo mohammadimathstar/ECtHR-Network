@@ -301,6 +301,22 @@ class CitationNetwork(nx.DiGraph):
     def set_node_attributes_from_dataframe(self, node_ids: pd.Series, attributes_df: pd.DataFrame):
         set_node_attributes_from_dataframe(self.G, node_ids, attributes_df)
 
+    def remove_dictations_to_duplicates(self):
+        edges_to_remove = get_citations_to_duplicates(self.G)
+        print(f"\tThere are {len(edges_to_remove)} citation (to replicates) to remove.")
+
+        edges_to_add = []
+        for (s, dup) in edges_to_remove:
+            target = self.find_unique_id(dup)
+            assert self.G.nodes[target][
+                       'label'] == 'Case', f"The target {target} should be of type 'Case', but it is of type {self.G.nodes[target]['label']}."
+            if (s, target) not in self.G.edges():
+                edges_to_add.append((s, target))
+
+        self.G.remove_edges_from(edges_to_remove)
+        self.G.add_edges_from(edges_to_add, label='CASE_TO_CASE')
+
+
     def dataframe_to_network(self, df, attrs: list):
         """
         Converts a DataFrame of case law data to a network representation.
@@ -325,47 +341,72 @@ class CitationNetwork(nx.DiGraph):
         df['Refs_Year'] = concat_appno_year_with_search(df[['ReferTo', 'Text']])
 
         # Start creation of network
-        print("We start the creation of the network!\n")
-        print("Adding nodes/case laws to the network!")
+        print("\n\n")
+        print(100 * "*")
+        print("*" + 35 * " " + "Creation of Citation Network" + 35 * " " + "*")
+        print(100 * "*")
+        print("\nAdding nodes/case laws to the network!")
         self.add_nodes_of_network(df.AppNo_Year)
+
         num_of_cases_with_meta_data = len([n for n, d in self.G.nodes(data=True) if d['label'] == 'Case'])
-        num_of_nodes_with_meta_data_with_duplicates = self.G.number_of_nodes()
-        print(f"\tThere are {self.G.number_of_nodes()} nodes of which {num_of_cases_with_meta_data} is with meta-data "
-              f"and {self.G.number_of_nodes()-num_of_cases_with_meta_data} duplicates (of cases with meta-data)")
 
         print("Adding citations to the network!")
         self.add_citations_to_network(df.Refs_Year)
 
-        print(f"\tThere are {self.G.number_of_nodes()} nodes in the network.")
-        print(f"\tThere are {self.G.number_of_edges()} edges in the network.")
-        print(
-            f"There are {len([n for n, d in self.G.nodes(data=True) if d['label'] == self.duplicate_symbol])} duplicate nodes.\n")
+        print(f"\n\tThere are {self.G.number_of_nodes()} nodes and {self.G.number_of_edges()} edges in the network.")
+        print(f"\tThere are {num_of_cases_with_meta_data} case laws with meta-data.")
+
+        print("\nRemove citation to duplicates.")
+        self.remove_dictations_to_duplicates()
+
+        print(f"\tThere are {self.G.number_of_nodes()} nodes and {self.G.number_of_edges()} edges in the network.")
+
+        node_dup = duplicates_receive_citations(self.G)
+        assert not node_dup, f"For the duplicate case '{node_dup}', you have {self.G.in_degree(node_dup)} incoming citations."
+
+        # print(
+        #     f"There are {len([n for n, d in self.G.nodes(data=True) if d['label'] == self.duplicate_symbol])} duplicate nodes.\n")
 
         assert nx.is_directed_acyclic_graph(
             self.G), 'The network is not DAG (after creating citation network using dataframe).'
 
-        print(f"There are {len([n for n in self.G.nodes() if n[-4:] == 'None'])} nodes with unknown year.\n"
-              f"Concatenating two nodes with the same application number: one with known judgment year and another with unknown judgment year!")
+        print(f"\nThere are {len([n for n in self.G.nodes() if n[-4:] == 'None'])} nodes with unknown year.\n"
+              f"Concatenating two nodes with the same application number: ")
+        print("\t-one with known judgment year and another with unknown judgment year!")
         self.concatenate_nodes_with_matching_years()
 
-        print(f"\nThere are {self.G.number_of_nodes()} nodes in total.")
-        print(f"There are {self.G.number_of_edges()} edges in total.")
+        print(f"\nThere are {self.G.number_of_nodes()} nodes and {self.G.number_of_edges()} edges in total.")
+
+        print("Remove citation to duplicates.")
+        self.remove_dictations_to_duplicates()
+
+        node_dup = duplicates_receive_citations(self.G)
+        assert not node_dup, f"For the duplicate case '{node_dup}', you have {self.G.in_degree(node_dup)} incoming citations."
 
         # or if you want to ensure your graph stays DAG use the following
         # self.merge_cases_with_DAG_check()
         # assert nx.is_directed_acyclic_graph(self.G), 'The network is not DAG (after merging nodes with no meta-data.'
 
-        print(f"There are {len([n for n in self.G.nodes() if n[-4:] == 'None'])} nodes with unknown year.")
-        print(
-            f"There are {len([n for n, d in self.G.nodes(data=True) if d['label'] == self.duplicate_symbol])} duplicate nodes.")
+        # assert nx.is_directed_acyclic_graph(
+        #     self.G), 'The network is not DAG.'
 
         self.set_node_attributes_from_dataframe(df['AppNo_Year'], df[attrs])
 
         num_of_dup_nodes = len([n for n, d in self.G.nodes(data=True) if d['label'] == self.duplicate_symbol])
+        num_of_case_nodes = len([n for n, d in self.G.nodes(data=True) if d['label'] == 'Case'])
         num_of_dup_edges = len(
             [n for n, m, d in self.G.edges(data=True) if d['label'] == self.duplicate_symbol.upper() + "_TO_CASE"])
+        num_of_case2case_edges = len(
+            [n for n, m, d in self.G.edges(data=True) if d['label'] == "CASE_TO_CASE"])
+        num_of_cases_no_year = len([n for n in self.G.nodes() if n[-4:] == 'None'])
 
-        print(f"Note: there are {num_of_dup_nodes} duplicated nodes, but {num_of_dup_edges} DUPLICATE_TO_CASE edges.")
+        print("\n\nSUMMARY:")
+        print(f"\tThere are {self.G.number_of_nodes()} nodes and {self.G.number_of_edges()} edges in the network.")
+        print("Among them:")
+        print(f"\t\t- There are {num_of_case_nodes} case laws, and {num_of_dup_nodes} duplicate nodes.")
+        print(f"\t\t- There are {num_of_case2case_edges} citations (CASE_TO_CASE), and {num_of_dup_edges} 'DUPLICATE_TO_CASE' edges.")
+
+        print(f"\nThere are {num_of_cases_with_meta_data} case laws with meta-data and {num_of_cases_no_year} case laws with unknown judgment year.\n\n")
 
         return self.G
 

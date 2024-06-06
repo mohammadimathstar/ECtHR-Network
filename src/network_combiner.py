@@ -1,11 +1,12 @@
 import networkx as nx
 
-from utils import *
+from .utils import *
+import os
 
 
 class NetworkCombiner(nx.DiGraph):
     """It combines two networks of 'judgments' and 'decisions'"""
-    def __init__(self, graph_directory):
+    def __init__(self, graph_directory, judgment_graph, decision_graph):
         """
         Initializes the class.
 
@@ -13,12 +14,18 @@ class NetworkCombiner(nx.DiGraph):
         ----------
         file_path : str, optional
             file path to the judgments and decisions networks.
+        judgment_graph: str
+            the filename of the first graph
+        decision_graph: str
+            the filename of the second graph
         """
         super().__init__()
         self.graph = nx.DiGraph()
 
-        self.graph_judgments = self.load_graph(graph_directory + "graphJUD")
-        self.graph_decisions = self.load_graph(graph_directory + "graphDEC")
+        judgment_graph_address = os.path.join(graph_directory, judgment_graph)
+        decision_graph_address = os.path.join(graph_directory, decision_graph)
+        self.graph_judgments = self.load_graph(judgment_graph_address)
+        self.graph_decisions = self.load_graph(decision_graph_address)
 
 
     def load_graph(self, file_path):
@@ -107,7 +114,7 @@ class NetworkCombiner(nx.DiGraph):
         return G_merged
 
     @staticmethod
-    def add_judgment_and_decision_edges(graph):
+    def add_judgment_and_decision_edges(graph, judgment_graph, decision_graph):
         """
         Add citations to the combined 'judgments' and 'decisions' network.
 
@@ -124,8 +131,8 @@ class NetworkCombiner(nx.DiGraph):
             The updated graph with added citation edges.
         """
         # Load the judgment and decision graphs
-        judgment_graph = load_graph_from_json(fname='data/graphJUD')
-        decision_graph = load_graph_from_json(fname='data/graphDEC')
+        # judgment_graph = load_graph_from_json(fname='data/graphJUD')
+        # decision_graph = load_graph_from_json(fname='data/graphDEC')
 
         # G_jud = load_graph_from_json(fname='data/graphJUD')
         # G_dec = load_graph_from_json(fname='data/graphDEC')
@@ -245,14 +252,17 @@ class NetworkCombiner(nx.DiGraph):
             The combined graph with merged nodes and added citation edges.
         """
         # Remove duplicate nodes from both networks
+        print("1) remove the duplicate cases for both networks.")
         self.remove_duplicate_nodes(self.graph_judgments)
         self.remove_duplicate_nodes(self.graph_decisions)
 
         # Create the combined network's nodes
+        print("2) concatenate nodes of two networks")
         self.graph = self.merge_judgment_and_decision_nodes(self.graph_judgments, self.graph_decisions)
 
         # Add citations to the combined network
-        self.add_judgment_and_decision_edges(self.graph)
+        print("3) adding edges to the combined network")
+        self.add_judgment_and_decision_edges(self.graph, self.graph_judgments, self.graph_decisions)
 
         return self.graph
 

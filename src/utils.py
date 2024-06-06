@@ -240,6 +240,23 @@ def concat_appno_year_with_search(df: pd.DataFrame, delimiter: str = ";", window
     return pd.Series(l, copy=False, index=df.dropna(subset=['ReferTo']).index)
 
 
+def duplicates_receive_citations(G: nx.DiGraph, duplicate_symbol: str = 'Duplicate'):
+    for (n, d) in G.nodes(data=True):
+        if d['label'] == duplicate_symbol:
+            if G.in_degree(n) != 0:
+                return n
+    return False
+
+
+def get_citations_to_duplicates(G: nx.DiGraph, duplicate_symbol: str = 'Duplicate'):
+    edges_to_remove = []
+    for n, d in G.nodes(data=True):
+        if (d['label'] == duplicate_symbol) and (G.in_degree(n) != 0):
+            for (s, _) in G.in_edges(n):
+                edges_to_remove.append((s, n))
+    return edges_to_remove
+
+
 def concatenate_dict(dict1, dict2):
     """
     Concatenate two dictionaries by adding elements from the second dictionary to the first dictionary if they do not
