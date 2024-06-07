@@ -25,18 +25,26 @@ pip install networkx
 pip install neo4j
 ```
 
-## Download HUDOC
-To download HUDOC database, use the code presented in [HUDOC](https://github.com/WillSkywalker/HUDOCcrawler).
+## Overview
+To create the Graph Database, we need to perform the following steps:
+1) Download meta-data and texts from HUDOC.
+2) Create citation networks (using Networkx) of judgments and decisions, separately.
+3) Merge two citation networks (judgments and decisions).
+4) Create Neo4j Graph Database.
 
-## Creation of the citation network
-To represent a case law in the network, we use this pattern:
-- `'application_number:year'`: its application number + the year of the judgment
+## 1) Download HUDOC
+To download HUDOC database, use the code presented in [HUDOC](https://github.com/WillSkywalker/HUDOCcrawler).
 
 After downloading the HUDOC database (containing both meta-data and texts), we create a dataframe containing:
 - columns containing of meta-data, and
 - `'text'` column: containing the text of case laws.
 
 The dataframe is saved as .csv file, called `JUDGMENTS_full.csv` and `DECISIONS_full.csv`, in the `./data/download/` director.
+
+## 2) Creation of the citation network (Networkx)
+To represent a case law in the network, we use this pattern:
+- `'application_number:year'`: its application number + the year of the judgment
+
   
 To create the citation network for judgments:
 
@@ -50,14 +58,14 @@ To create the citation network for decisions:
 python main_network_builder.py --doctype DECISIONS --graph_name graphDEC --csv_dir './data/download/' --graph_dir './data'
 ```
 
-## Combining Citation Networks (Judgments and Decisions)
+## 3) Combining Citation Networks (Judgments and Decisions)
 To merge the judgment citation network and the decision citation network:
 ```bash
 python main_network_combiner.py --judgment_graph 'graphJUD' --decision_graph 'graphDEC' --graph 'graph_JUDDEC' --graphs_dir './data'
 ```
 
 
-## Create Neo4j Graph Database
+## 4) Create Neo4j Graph Database
 To convert a network of type `Networkx` to a Neo4j Graph Database:
 ```bash
 python main_neo4j_loader.py --graph 'graph_JUDDEC' --graphs_dir './data' --uri 'bolt://localhost:7687' --username ... --password ... 
