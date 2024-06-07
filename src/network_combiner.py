@@ -21,11 +21,13 @@ class NetworkCombiner(nx.DiGraph):
         """
         super().__init__()
         self.graph = nx.DiGraph()
+        self.duplicate_symbol = 'Duplicate'
 
         judgment_graph_address = os.path.join(graph_directory, judgment_graph)
         decision_graph_address = os.path.join(graph_directory, decision_graph)
         self.graph_judgments = self.load_graph(judgment_graph_address)
         self.graph_decisions = self.load_graph(decision_graph_address)
+
 
 
     def load_graph(self, file_path):
@@ -220,18 +222,6 @@ class NetworkCombiner(nx.DiGraph):
                 G.remove_edge(node, target_node)
                 nodes_to_remove.append(node)
 
-                # out_neighbors = [n for (_, n) in G.out_edges(node)]
-                # assert len(out_neighbors)==1, "node %s (a duplicate case) has %i outgoing citations." % (node, len(out_neighbors))
-                # pointAt = [n for (_, n) in G.out_edges(node)][0]
-                # assert G.nodes[pointAt]['label']=='Case', "node %s (a duplicate case) point to %s (which is not case but a %s)" % (node, pointAt, G.nodes[pointAt]['label'])
-                #
-                # l = [(node2, data2) for (node2, _, data2) in G.in_edges(node, data=True)]# if (node2, pointAt) not in G.edges()]
-                # for (n, d) in l:
-                #     if (n, pointAt) not in G.edges():
-                #         G.add_edge(n, pointAt, **d)
-                #     G.remove_edge(n, node)
-                # assert len(G.in_edges(node))==0, 'there are still some incoming citation to the duplicated case %s' % node
-
         G.remove_nodes_from(nodes_to_remove)
 
         print(f"After removing duplicates: {len(G.nodes())} nodes and {len(G.edges())} edges.")
@@ -263,6 +253,26 @@ class NetworkCombiner(nx.DiGraph):
         # Add citations to the combined network
         print("3) adding edges to the combined network")
         self.add_judgment_and_decision_edges(self.graph, self.graph_judgments, self.graph_decisions)
+
+        num_of_dup_nodes = len([n for n, d in self.graph.nodes(data=True) if d['label'] == self.duplicate_symbol])
+        num_of_case_nodes = len([n for n, d in self.graph.nodes(data=True) if d['label'] == 'Case'])
+        num_of_dup_edges = len(
+            [n for n, m, d in self.graph.edges(data=True) if d['label'] == self.duplicate_symbol.upper() + "_TO_CASE"])
+        num_of_case2case_edges = len(
+            [n for n, m, d in self.graph.edges(data=True) if d['label'] == "CASE_TO_CASE"])
+        num_of_cases_no_year = len([n for n in self.graph.nodes() if n[-4:] == 'None'])
+
+        num_of_cases_with_meta_data = len([n for n, d in self.graph.nodes(data=True) if d.get("Title", None) is not None])
+
+        print("\n\nSUMMARY:")
+        print(f"\tThere are {self.graph.number_of_nodes()} nodes and {self.graph.number_of_edges()} edges in the network.")
+        print("Among them:")
+        print(f"\t\t- There are {num_of_case_nodes} case laws, and {num_of_dup_nodes} duplicate nodes.")
+        print(
+            f"\t\t- There are {num_of_case2case_edges} citations (CASE_TO_CASE), and {num_of_dup_edges} 'DUPLICATE_TO_CASE' edges.")
+
+        print(
+            f"\nThere are {num_of_cases_with_meta_data} case laws with meta-data and {num_of_cases_no_year} case laws with unknown judgment year.\n\n")
 
         return self.graph
 

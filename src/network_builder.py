@@ -222,39 +222,6 @@ class CitationNetwork(nx.DiGraph):
                     if not self.is_it_a_self_loop(source, target):
                         self.G.add_edge(source, target, label=edge_type, citedAt=citation_year)
 
-    # def is_it_a_self_loop(self, source, target):
-    #     if source[:-5] == target[:-5]:
-    #         return True
-    #
-    #     for (t, s, d) in self.G.in_edges(source, data=True):
-    #         if t[:-5] == target[:-5]:
-    #             return True
-    #
-    #     if (source, target) in self.G.out_edges(source):
-    #         return True
-    #     return False
-    #
-    # def add_citations_to_network(self, series: pd.Series, delimiter=";", node_type='Case', edge_type="CASE_TO_CASE"):
-    #
-    #     for Case, Refs in series.dropna().items():
-    #         case_id = Case.split(delimiter)[0]
-    #
-    #         # source = self.find_unique_id(case_id)
-    #         source = case_id  # modeified; see above
-    #         citation_year = source[-4:]
-    #
-    #         for ref in Refs.split(delimiter):
-    #             if len(re.findall(r"\d*(\d\d\d/\d\d)", ref)) > 0:
-    #                 if ref not in self.G.nodes():
-    #                     self.G.add_node(ref, label=node_type)
-    #
-    #                 target = self.find_unique_id(ref)
-    #
-    #                 # ****************IMPORTANT***********
-    #                 # if the source and target have the same application number we do not add new
-    #                 if not self.is_it_a_self_loop(source, target):
-    #                     self.G.add_edge(source, target, label=edge_type, citedAt=citation_year)
-
     def merge_cases_with_matching_years(G):
         """
         Merge nodes with missing year information with nodes having complete year information.
