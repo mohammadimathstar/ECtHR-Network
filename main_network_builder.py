@@ -1,7 +1,7 @@
 
 from src.args import get_builder_args
 from src.data_loader import CaseDataPreprocessor
-from src.utils import save_graph_to_json, load_graph_from_json
+from src.utils import save_graph_to_json
 from src.network_builder import CitationNetwork
 
 import pandas as pd

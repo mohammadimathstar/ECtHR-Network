@@ -28,7 +28,7 @@ def get_builder_args() -> argparse.Namespace:
 
 
 def get_combiner_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser('Create The Citation Network of European Court of Human Rights.')
+    parser = argparse.ArgumentParser('Merge the Citation Networks of Judgments and Decisions.')
 
     parser.add_argument('--judgment_graph',
                         type=str,
@@ -55,38 +55,30 @@ def get_combiner_args() -> argparse.Namespace:
     return args
 
 
-def save_args(args: argparse.Namespace, directory_path: str) -> None:
-    """
-    Save the arguments in the specified directory as
-        - a text file called 'args.txt'
-        - a pickle file called 'args.pickle'
-    :param args: The arguments to be saved
-    :param directory_path: The path to the directory where the arguments should be saved
-    """
-    # If the specified directory does not exists, create it
-    if not os.path.isdir(directory_path):
-        os.mkdir(directory_path)
-    # Save the args in a text file
-    with open(directory_path + '/args.txt', 'w') as f:
-        for arg in vars(args):
-            val = getattr(args, arg)
-            if isinstance(val, str):  # Add quotation marks to indicate that the argument is of string type
-                val = f"'{val}'"
-            f.write('{}: {}\n'.format(arg, val))
-    # Pickle the args for possible reuse
-    with open(directory_path + '/args.pickle', 'wb') as f:
-        pickle.dump(args, f)
+def get_neo4j_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser('Load the Citation Network to Neo4j.')
 
+    parser.add_argument('--graph',
+                        type=str,
+                        default='graph_JUDDEC',
+                        help='The name to save the constructed graph.')
+    parser.add_argument('--graphs_dir',
+                        type=str,
+                        default='./data',
+                        help='The directory to read networks.')
+    parser.add_argument('--uri',
+                        type=str,
+                        default='bolt://localhost:7687',
+                        help='The URI of the Neo4j database.')
+    parser.add_argument('--username',
+                        type=str,
+                        default='neo4j',
+                        help='The username for Neo4j authentication.')
+    parser.add_argument('--password',
+                        type=str,
+                        default='12345678',
+                        help='The password for Neo4j authentication.')
 
-def load_args(directory_path: str) -> argparse.Namespace:
-    """
-    Load the pickled arguments from the specified directory
-    :param directory_path: The path to the directory from which the arguments should be loaded
-    :return: the unpickled arguments
-    """
-    with open(directory_path + '/args.pickle', 'rb') as f:
-        args = pickle.load(f)
+    args = parser.parse_args()
     return args
-
-
 

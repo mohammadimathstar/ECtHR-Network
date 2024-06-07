@@ -1,5 +1,5 @@
 # Code to create the database in Neo4j.
-
+import networkx as nx
 from neo4j.time import DateTime
 from neo4j import GraphDatabase
 
@@ -58,7 +58,7 @@ class Neo4jLoader:
         result = tx.run(query, node_id=node_id)
         return result.single()["node_exists"]
 
-    @classmethod
+    # @classmethod
     # def node_exists(cls, tx, id: str, label: Union[str, list]):
     #     """ to check whether a case exists or not"""
     #     if isinstance(label, list):
@@ -220,7 +220,7 @@ class Neo4jLoader:
         )
         tx.run(query, from_id=from_id, to_id=to_id)
 
-    @classmethod
+    # @classmethod
     # def create_case_to_case_relationship(cls, tx, From, To):
     #     q = (
     #         "MATCH (n {id:$From})"
@@ -229,7 +229,7 @@ class Neo4jLoader:
     #     )
     #     res = tx.run(q, From=From, To=To)
 
-    def create_graph(self, graph):
+    def create_graph(self, graph: nx.DiGraph):
         """
         Enter the data from a Networkx graph into the Neo4j database.
 
