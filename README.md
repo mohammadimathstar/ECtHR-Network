@@ -1,4 +1,4 @@
-# Networkx to Neo4j Graph Database Converter
+# Creation of Neo4j Graph Database for ECtHR Citation Network
 
 This repository contains a Python script that converts a network created using Networkx into a Graph Database in Neo4j using its Python API.
 
@@ -54,4 +54,11 @@ python main_network_builder.py --doctype DECISIONS --graph_name graphDEC --csv_d
 To merge the judgment citation network and the decision citation network:
 ```bash
 python main_network_combiner.py --judgment_graph 'graphJUD' --decision_graph 'graphDEC' --graph 'graph_JUDDEC' --graphs_dir './data'
+```
+
+
+## Create Neo4j Graph Database
+To convert a network of type `Networkx` to a Neo4j Graph Database:
+```bash
+python main_neo4j_loader.py --graph 'graph_JUDDEC' --graphs_dir './data' --uri 'bolt://localhost:7687' --username ... --password ... 
 ```
